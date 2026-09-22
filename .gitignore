@@ -1,0 +1,10 @@
+# Editor
+.vscode/
+.idea/
+
+# Entornos
+.env
+
+# Volúmenes de base de datos locales
+pgdata/
+pgadmin-data/

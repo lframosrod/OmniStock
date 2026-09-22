@@ -1,0 +1,80 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: omnistock-db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: omnistock
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - omni-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: omnistock-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@omnistock.com
+      PGADMIN_DEFAULT_PASSWORD: adminpassword
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - db
+    networks:
+      - omni-network
+
+  backend:
+    build:
+      context: ./backend-express
+      dockerfile: Dockerfile
+    container_name: omnistock-api
+    restart: always
+    environment:
+      - DB_HOST=db
+      - DB_USER=admin
+      - DB_PASSWORD=adminpassword
+      - DB_NAME=omnistock
+      - DB_PORT=5432
+      - PORT=3000
+    depends_on:
+      - db
+    networks:
+      - omni-network
+
+  frontend:
+    build:
+      context: ./frontend-react
+      dockerfile: Dockerfile
+    container_name: omnistock-web
+    restart: always
+    depends_on:
+      - backend
+    networks:
+      - omni-network
+
+  proxy:
+    image: nginx:alpine
+    container_name: omnistock-proxy
+    restart: always
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - omni-network
+
+volumes:
+  pgdata:
+  pgadmin-data:
+
+networks:
+  omni-network:
+    driver: bridge
