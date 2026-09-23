@@ -54,8 +54,12 @@ services:
     build:
       context: ./frontend-react
       dockerfile: Dockerfile
+      target: development
     container_name: omnistock-web
     restart: always
+    volumes:
+      - ./frontend-react:/app
+      - /app/node_modules
     depends_on:
       - backend
     networks:
