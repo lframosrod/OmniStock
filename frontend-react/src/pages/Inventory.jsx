@@ -4,8 +4,9 @@ import api from '../api/axios';
 
 export default function Inventory() {
     const [data, setData] = useState([]);
+    const [showForm, setShowForm] = useState(false);
+    const [newProduct, setNewProduct] = useState({ name: '', sku: '' });
 
-    // Petición
     const fetchProducts = async () => {
         try {
             const response = await api.get('/products');
@@ -19,7 +20,6 @@ export default function Inventory() {
         fetchProducts();
     }, []);
 
-    // Entradas y Salidas
     const handleMovement = async (productId, type) => {
         const qtyInput = window.prompt(`¿Cuántas unidades de ${type} deseas registrar?`);
         if (!qtyInput) return;
@@ -39,7 +39,6 @@ export default function Inventory() {
                 quantity: quantity,
                 notes: notes
             });
-            // Recargamos la tabla para ver el nuevo stock
             fetchProducts();
         } catch (error) {
             console.error("Error al registrar el movimiento:", error);
@@ -47,7 +46,19 @@ export default function Inventory() {
         }
     };
 
-    // Columna de acciones
+    const handleCreateProduct = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/products', newProduct);
+            setNewProduct({ name: '', sku: '' }); // Limpiar formulario
+            setShowForm(false); // Ocultar formulario
+            fetchProducts(); // Recargar tabla
+        } catch (error) {
+            console.error("Error al crear producto:", error);
+            alert("Error al crear el producto. Revisa que el SKU no esté duplicado.");
+        }
+    };
+
     const columns = [
         { header: 'ID', accessorKey: 'id' },
         { header: 'Nombre del Producto', accessorKey: 'name' },
@@ -85,13 +96,44 @@ export default function Inventory() {
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <h2>Kardex - Listado de Productos</h2>
-                <button style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '8px 15px', cursor: 'pointer', borderRadius: '4px' }}>
-                    Nuevo Producto
+                <button
+                    onClick={() => setShowForm(!showForm)}
+                    style={{ backgroundColor: showForm ? '#6b7280' : '#3b82f6', color: 'white', border: 'none', padding: '8px 15px', cursor: 'pointer', borderRadius: '4px' }}
+                >
+                    {showForm ? 'Cancelar' : 'Nuevo Producto'}
                 </button>
             </div>
 
+            {showForm && (
+                <form onSubmit={handleCreateProduct} style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#1f2937', borderRadius: '8px', display: 'flex', gap: '15px', alignItems: 'flex-end' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        <label style={{ fontSize: '14px', color: '#d1d5db' }}>Nombre del Producto</label>
+                        <input
+                            type="text"
+                            required
+                            value={newProduct.name}
+                            onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #4b5563', backgroundColor: '#374151', color: 'white' }}
+                        />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                        <label style={{ fontSize: '14px', color: '#d1d5db' }}>SKU</label>
+                        <input
+                            type="text"
+                            required
+                            value={newProduct.sku}
+                            onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
+                            style={{ padding: '8px', borderRadius: '4px', border: '1px solid #4b5563', backgroundColor: '#374151', color: 'white' }}
+                        />
+                    </div>
+                    <button type="submit" style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '9px 15px', cursor: 'pointer', borderRadius: '4px' }}>
+                        Guardar Producto
+                    </button>
+                </form>
+            )}
+
             <table border="1" cellPadding="10" style={{ borderCollapse: 'collapse', width: '100%', textAlign: 'left' }}>
-                <thead style={{ backgroundColor: '#f3f4f6' }}>
+                <thead style={{ backgroundColor: '#f3f4f6', color: '#111827' }}>
                     {table.getHeaderGroups().map(headerGroup => (
                         <tr key={headerGroup.id}>
                             {headerGroup.headers.map(header => (
