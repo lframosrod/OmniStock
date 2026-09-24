@@ -3,12 +3,12 @@ import Inventory from './pages/Inventory';
 
 const Layout = () => (
   <div style={{ padding: '20px', fontFamily: 'sans-serif' }}>
-    <header>
-      <h1>📦 OmniStock</h1>
-      <hr />
+    <header style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px' }}>
+      <img src="/logo.svg" alt="OmniStock Logo" style={{ width: '40px', height: '40px' }} />
+      <h1 style={{ margin: 0 }}>OmniStock</h1>
     </header>
-    <main style={{ marginTop: '20px' }}>
-      {/* Aquí se renderizará el componente Inventory */}
+    <hr style={{ borderColor: '#374151', marginBottom: '20px' }} />
+    <main>
       <Outlet />
     </main>
   </div>
