@@ -69,4 +69,21 @@ router.get('/products', async (req, res) => {
     }
 });
 
+// Obtener historial de movimientos de un producto (Kardex)
+router.get('/products/:id/movements', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const query = `
+            SELECT id, movement_type, quantity, notes, created_at 
+            FROM movements 
+            WHERE product_id = $1 
+            ORDER BY created_at DESC
+        `;
+        const result = await pool.query(query, [id]);
+        res.json({ data: result.rows });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = router;

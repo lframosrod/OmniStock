@@ -7,6 +7,10 @@ export default function Inventory() {
     const [showForm, setShowForm] = useState(false);
     const [newProduct, setNewProduct] = useState({ name: '', sku: '' });
 
+    // Estados para el modal del Kardex
+    const [historyModal, setHistoryModal] = useState({ isOpen: false, productName: '' });
+    const [movements, setMovements] = useState([]);
+
     const fetchProducts = async () => {
         try {
             const response = await api.get('/products');
@@ -50,12 +54,24 @@ export default function Inventory() {
         e.preventDefault();
         try {
             await api.post('/products', newProduct);
-            setNewProduct({ name: '', sku: '' }); // Limpiar formulario
-            setShowForm(false); // Ocultar formulario
-            fetchProducts(); // Recargar tabla
+            setNewProduct({ name: '', sku: '' });
+            setShowForm(false);
+            fetchProducts();
         } catch (error) {
             console.error("Error al crear producto:", error);
             alert("Error al crear el producto. Revisa que el SKU no esté duplicado.");
+        }
+    };
+
+    // Función para consultar los movimientos y abrir el modal
+    const handleViewHistory = async (productId, productName) => {
+        try {
+            const response = await api.get(`/products/${productId}/movements`);
+            setMovements(response.data.data);
+            setHistoryModal({ isOpen: true, productName });
+        } catch (error) {
+            console.error("Error al cargar el historial:", error);
+            alert("No se pudo cargar el historial del producto.");
         }
     };
 
@@ -81,6 +97,12 @@ export default function Inventory() {
                     >
                         - Salida
                     </button>
+                    <button
+                        onClick={() => handleViewHistory(row.original.id, row.original.name)}
+                        style={{ backgroundColor: '#6366f1', color: 'white', border: 'none', padding: '5px 10px', cursor: 'pointer', borderRadius: '4px' }}
+                    >
+                        📋 Historial
+                    </button>
                 </div>
             )
         }
@@ -93,9 +115,9 @@ export default function Inventory() {
     });
 
     return (
-        <div>
+        <div style={{ position: 'relative' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                <h2>Kardex - Listado de Productos</h2>
+                <h2>Listado de Productos</h2>
                 <button
                     onClick={() => setShowForm(!showForm)}
                     style={{ backgroundColor: showForm ? '#6b7280' : '#3b82f6', color: 'white', border: 'none', padding: '8px 15px', cursor: 'pointer', borderRadius: '4px' }}
@@ -154,13 +176,54 @@ export default function Inventory() {
                             ))}
                         </tr>
                     ))}
-                    {data.length === 0 && (
-                        <tr>
-                            <td colSpan={columns.length} style={{ textAlign: 'center' }}>No hay productos registrados.</td>
-                        </tr>
-                    )}
                 </tbody>
             </table>
+
+            {/* Modal del Historial (Kardex) */}
+            {historyModal.isOpen && (
+                <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+                    <div style={{ backgroundColor: '#1f2937', padding: '20px', borderRadius: '8px', width: '80%', maxWidth: '800px', maxHeight: '80vh', overflowY: 'auto', color: 'white' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                            <h3 style={{ margin: 0 }}>Kardex: {historyModal.productName}</h3>
+                            <button
+                                onClick={() => setHistoryModal({ isOpen: false, productName: '' })}
+                                style={{ backgroundColor: 'transparent', color: '#ef4444', border: 'none', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%', textAlign: 'left', fontSize: '14px' }}>
+                            <thead style={{ backgroundColor: '#374151' }}>
+                                <tr>
+                                    <th>Fecha y Hora</th>
+                                    <th>Tipo</th>
+                                    <th>Cantidad</th>
+                                    <th>Notas / Justificación</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {movements.length > 0 ? (
+                                    movements.map((mov) => (
+                                        <tr key={mov.id}>
+                                            <td>{new Date(mov.created_at).toLocaleString()}</td>
+                                            <td style={{ color: mov.movement_type === 'ENTRADA' ? '#34d399' : '#f87171', fontWeight: 'bold' }}>
+                                                {mov.movement_type}
+                                            </td>
+                                            <td>{mov.quantity}</td>
+                                            <td>{mov.notes}</td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="4" style={{ textAlign: 'center' }}>No hay movimientos registrados.</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
