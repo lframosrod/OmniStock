@@ -11,10 +11,18 @@ export default function Inventory() {
     const [movements, setMovements] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const fetchProducts = async (search = '') => {
+    // Estados para la paginación
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+
+    // Función para recibir y enviar la página actual
+    const fetchProducts = async (search = '', page = 1) => {
         try {
-            const response = await api.get(`/products?search=${search}`);
+            const response = await api.get(`/products?search=${search}&page=${page}&limit=10`);
             setData(response.data.data);
+            // Guardamos la información de paginación que viene desde Express
+            setTotalPages(response.data.meta.totalPages);
+            setCurrentPage(response.data.meta.currentPage);
         } catch (error) {
             console.error("Error al cargar productos:", error);
         }
@@ -22,10 +30,10 @@ export default function Inventory() {
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
-            fetchProducts(searchTerm);
+            fetchProducts(searchTerm, currentPage);
         }, 300);
         return () => clearTimeout(delayDebounceFn);
-    }, [searchTerm]);
+    }, [searchTerm, currentPage]);
 
     const handleMovement = async (productId, type) => {
         const qtyInput = window.prompt(`¿Cuántas unidades de ${type} deseas registrar?`);
@@ -46,7 +54,7 @@ export default function Inventory() {
                 quantity: quantity,
                 notes: notes
             });
-            fetchProducts(searchTerm);
+            fetchProducts(searchTerm, currentPage); // Recargar manteniendo la página actual
         } catch (error) {
             console.error("Error al registrar el movimiento:", error);
             alert("Ocurrió un error al registrar el movimiento.");
@@ -60,7 +68,8 @@ export default function Inventory() {
             setNewProduct({ name: '', sku: '' });
             setShowForm(false);
             setSearchTerm('');
-            fetchProducts('');
+            setCurrentPage(1); // Al crear, volvemos a la página 1
+            fetchProducts('', 1);
         } catch (error) {
             console.error("Error al crear producto:", error);
             alert("Error al crear el producto. Revisa que el SKU no esté duplicado.");
@@ -78,32 +87,23 @@ export default function Inventory() {
         }
     };
 
-    // Función para exportar a CSV desde el cliente
     const exportToCSV = () => {
         if (movements.length === 0) {
             alert("No hay movimientos para exportar.");
             return;
         }
-
         const headers = ["Fecha y Hora", "Tipo", "Cantidad", "Notas / Justificación"];
-
         const rows = movements.map(mov => {
-            // Limpiar comas de fecha para no romper columnas
             const date = new Date(mov.created_at).toLocaleString().replace(/,/g, '');
             const type = mov.movement_type;
             const qty = mov.quantity;
-            // Escapar comillas dobles y comas en las notas
             const notes = mov.notes ? `"${mov.notes.replace(/"/g, '""')}"` : "";
             return [date, type, qty, notes].join(",");
         });
-
-        // \uFEFF
         const csvContent = ["\uFEFF" + headers.join(","), ...rows].join("\n");
-
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
-
         link.href = url;
         link.setAttribute("download", `kardex_${historyModal.productName.replace(/\s+/g, '_')}_${new Date().getTime()}.csv`);
         document.body.appendChild(link);
@@ -159,7 +159,10 @@ export default function Inventory() {
                         type="text"
                         placeholder="🔍 Buscar por nombre o SKU..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => {
+                            setSearchTerm(e.target.value);
+                            setCurrentPage(1); // Regresar a la página 1 al buscar
+                        }}
                         style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #4b5563', backgroundColor: '#374151', color: 'white' }}
                     />
                 </div>
@@ -233,14 +236,37 @@ export default function Inventory() {
                 </table>
             </div>
 
+            {/* Controles de Paginación */}
+            {totalPages > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                        disabled={currentPage === 1}
+                        style={{ padding: '8px 16px', backgroundColor: currentPage === 1 ? '#4b5563' : '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                    >
+                        Anterior
+                    </button>
+
+                    <span style={{ color: '#d1d5db', fontSize: '14px' }}>
+                        Página <strong>{currentPage}</strong> de <strong>{totalPages}</strong>
+                    </span>
+
+                    <button
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                        disabled={currentPage === totalPages}
+                        style={{ padding: '8px 16px', backgroundColor: currentPage === totalPages ? '#4b5563' : '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+                    >
+                        Siguiente
+                    </button>
+                </div>
+            )}
+
             {/* Modal del Historial (Kardex) */}
             {historyModal.isOpen && (
                 <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
                     <div style={{ backgroundColor: '#1f2937', padding: '20px', borderRadius: '8px', width: '90%', maxWidth: '800px', maxHeight: '80vh', overflowY: 'auto', color: 'white' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                             <h3 style={{ margin: 0 }}>Kardex: {historyModal.productName}</h3>
-
-                            {/* Botones del Modal */}
                             <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
                                 <button
                                     onClick={exportToCSV}
