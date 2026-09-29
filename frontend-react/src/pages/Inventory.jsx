@@ -9,11 +9,8 @@ export default function Inventory() {
 
     const [historyModal, setHistoryModal] = useState({ isOpen: false, productName: '' });
     const [movements, setMovements] = useState([]);
-
-    // Nuevo estado para la búsqueda
     const [searchTerm, setSearchTerm] = useState('');
 
-    // La función ahora acepta el término de búsqueda y lo envía como Query Parameter
     const fetchProducts = async (search = '') => {
         try {
             const response = await api.get(`/products?search=${search}`);
@@ -23,12 +20,10 @@ export default function Inventory() {
         }
     };
 
-    // Efecto con Debounce (retraso) para buscar mientras el usuario escribe
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
             fetchProducts(searchTerm);
         }, 300);
-
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm]);
 
@@ -51,7 +46,7 @@ export default function Inventory() {
                 quantity: quantity,
                 notes: notes
             });
-            fetchProducts(searchTerm); // Recargar manteniendo el filtro actual
+            fetchProducts(searchTerm);
         } catch (error) {
             console.error("Error al registrar el movimiento:", error);
             alert("Ocurrió un error al registrar el movimiento.");
@@ -64,7 +59,7 @@ export default function Inventory() {
             await api.post('/products', newProduct);
             setNewProduct({ name: '', sku: '' });
             setShowForm(false);
-            setSearchTerm(''); // Limpiar búsqueda para ver el producto recién creado
+            setSearchTerm('');
             fetchProducts('');
         } catch (error) {
             console.error("Error al crear producto:", error);
@@ -81,6 +76,39 @@ export default function Inventory() {
             console.error("Error al cargar el historial:", error);
             alert("No se pudo cargar el historial del producto.");
         }
+    };
+
+    // Función para exportar a CSV desde el cliente
+    const exportToCSV = () => {
+        if (movements.length === 0) {
+            alert("No hay movimientos para exportar.");
+            return;
+        }
+
+        const headers = ["Fecha y Hora", "Tipo", "Cantidad", "Notas / Justificación"];
+
+        const rows = movements.map(mov => {
+            // Limpiar comas de fecha para no romper columnas
+            const date = new Date(mov.created_at).toLocaleString().replace(/,/g, '');
+            const type = mov.movement_type;
+            const qty = mov.quantity;
+            // Escapar comillas dobles y comas en las notas
+            const notes = mov.notes ? `"${mov.notes.replace(/"/g, '""')}"` : "";
+            return [date, type, qty, notes].join(",");
+        });
+
+        // \uFEFF
+        const csvContent = ["\uFEFF" + headers.join(","), ...rows].join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.setAttribute("download", `kardex_${historyModal.productName.replace(/\s+/g, '_')}_${new Date().getTime()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const columns = [
@@ -126,8 +154,6 @@ export default function Inventory() {
         <div style={{ position: 'relative' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
                 <h2>Listado de Productos</h2>
-
-                {/* Barra de búsqueda */}
                 <div style={{ flexGrow: 1, maxWidth: '400px', marginLeft: '20px' }}>
                     <input
                         type="text"
@@ -137,7 +163,6 @@ export default function Inventory() {
                         style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #4b5563', backgroundColor: '#374151', color: 'white' }}
                     />
                 </div>
-
                 <button
                     onClick={() => setShowForm(!showForm)}
                     style={{ backgroundColor: showForm ? '#6b7280' : '#3b82f6', color: 'white', border: 'none', padding: '10px 15px', cursor: 'pointer', borderRadius: '4px' }}
@@ -214,12 +239,22 @@ export default function Inventory() {
                     <div style={{ backgroundColor: '#1f2937', padding: '20px', borderRadius: '8px', width: '90%', maxWidth: '800px', maxHeight: '80vh', overflowY: 'auto', color: 'white' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                             <h3 style={{ margin: 0 }}>Kardex: {historyModal.productName}</h3>
-                            <button
-                                onClick={() => setHistoryModal({ isOpen: false, productName: '' })}
-                                style={{ backgroundColor: 'transparent', color: '#ef4444', border: 'none', fontSize: '18px', cursor: 'pointer', fontWeight: 'bold' }}
-                            >
-                                ✕
-                            </button>
+
+                            {/* Botones del Modal */}
+                            <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                <button
+                                    onClick={exportToCSV}
+                                    style={{ backgroundColor: '#10b981', color: 'white', border: 'none', padding: '6px 12px', cursor: 'pointer', borderRadius: '4px', fontSize: '13px', fontWeight: 'bold' }}
+                                >
+                                    📥 Descargar CSV
+                                </button>
+                                <button
+                                    onClick={() => setHistoryModal({ isOpen: false, productName: '' })}
+                                    style={{ backgroundColor: 'transparent', color: '#ef4444', border: 'none', fontSize: '20px', cursor: 'pointer', fontWeight: 'bold', padding: 0 }}
+                                >
+                                    ✕
+                                </button>
+                            </div>
                         </div>
 
                         <table border="1" cellPadding="8" style={{ borderCollapse: 'collapse', width: '100%', textAlign: 'left', fontSize: '14px' }}>
