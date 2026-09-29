@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
+const { verifyToken, isAdmin } = require('../middleware'); // <-- Importamos los candados
 
-// 1. Crear un nuevo producto
-router.post('/products', async (req, res) => {
+// 1. Crear un nuevo producto (Protegida: Solo Administradores)
+router.post('/products', verifyToken, isAdmin, async (req, res) => {
     const { name, sku, category_id } = req.body;
     try {
         const result = await pool.query(
@@ -16,8 +17,8 @@ router.post('/products', async (req, res) => {
     }
 });
 
-// 2. Registrar un movimiento
-router.post('/movements', async (req, res) => {
+// 2. Registrar un movimiento (Protegida: Cualquier usuario autenticado)
+router.post('/movements', verifyToken, async (req, res) => {
     const { product_id, movement_type, quantity, notes } = req.body;
     try {
         const result = await pool.query(
@@ -30,8 +31,8 @@ router.post('/movements', async (req, res) => {
     }
 });
 
-// 3. Obtener productos (Alimenta la tabla principal)
-router.get('/products', async (req, res) => {
+// 3. Obtener productos (Protegida: Cualquier usuario autenticado)
+router.get('/products', verifyToken, async (req, res) => {
     try {
         const { page = 1, limit = 10, search = '', sort = 'id', order = 'desc' } = req.query;
         const offset = (page - 1) * limit;
@@ -66,8 +67,8 @@ router.get('/products', async (req, res) => {
     }
 });
 
-// 4. Obtener historial de movimientos de un producto individual
-router.get('/products/:id/movements', async (req, res) => {
+// 4. Obtener historial de movimientos de un producto individual (Protegida: Cualquier usuario autenticado)
+router.get('/products/:id/movements', verifyToken, async (req, res) => {
     const { id } = req.params;
     try {
         const query = `
@@ -83,8 +84,8 @@ router.get('/products/:id/movements', async (req, res) => {
     }
 });
 
-// 5. Obtener el historial completo (Kardex Global) para el CSV
-router.get('/movements/all', async (req, res) => {
+// 5. Obtener el historial completo (Kardex Global) para el CSV (Protegida: Solo Administradores)
+router.get('/movements/all', verifyToken, isAdmin, async (req, res) => {
     try {
         const query = `
             SELECT 
