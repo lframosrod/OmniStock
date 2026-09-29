@@ -4,11 +4,11 @@ import Inventory from './pages/Inventory';
 const Layout = () => (
   <div style={{ minHeight: '100vh', backgroundColor: '#0f172a', color: '#f8fafc', fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
 
-    {/* Navbar Profesional */}
+    {/* Navbar Profesional ajustada al ancho total con padding simétrico */}
     <header style={{
       backgroundColor: '#1e293b',
       borderBottom: '1px solid #334155',
-      padding: '12px 30px',
+      padding: '14px 32px',
       display: 'flex',
       alignItems: 'center',
       gap: '12px',
@@ -20,8 +20,8 @@ const Layout = () => (
       </h1>
     </header>
 
-    {/* Contenedor Principal */}
-    <main style={{ padding: '30px', maxWidth: '1200px', margin: '0 auto' }}>
+    {/* Contenedor Principal Fluid (Ancho completo con márgenes limpios de 32px) */}
+    <main style={{ padding: '24px 32px', width: '100%', boxSizing: 'border-box' }}>
       <Outlet />
     </main>
 
@@ -37,7 +37,7 @@ function App() {
           <Route path="inventario" element={<Inventory />} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </BrowserRouter >
   );
 }
 
