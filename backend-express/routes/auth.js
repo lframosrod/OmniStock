@@ -60,4 +60,14 @@ router.post('/login', async (req, res) => {
     }
 });
 
+// Obtener lista de usuarios
+router.get('/users', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, username, role, created_at FROM users ORDER BY id ASC');
+        res.json({ data: result.rows });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = router;
