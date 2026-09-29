@@ -1,23 +1,33 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, NavLink } from 'react-router-dom';
 import Inventory from './pages/Inventory';
 import Login from './pages/Login';
-import Users from './pages/Users'; // <-- Importamos el componente Users
+import Users from './pages/Users';
 import api from './api/axios';
 
-// Componente para proteger las rutas privadas
-const PrivateRoute = ({ children }) => {
+// Componente para proteger las rutas privadas (validación de rol)
+const PrivateRoute = ({ children, requireAdmin }) => {
   const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" replace />;
+  const role = localStorage.getItem('role');
+
+  // Si no hay sesión, al Login
+  if (!token) return <Navigate to="/login" replace />;
+
+  // Si la ruta requiere ser ADMIN y el usuario no lo es, regresarlo al inventario
+  if (requireAdmin && role !== 'ADMIN') return <Navigate to="/inventario" replace />;
+
+  return children;
 };
 
 const Layout = () => {
   const navigate = useNavigate();
-  const username = localStorage.getItem('username'); // Recuperar el nombre del usuario guardado en el Login
+  const username = localStorage.getItem('username');
+  const role = localStorage.getItem('role'); // <-- Recuperar el rol guardado
 
   // Función para cerrar sesión
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
+    localStorage.removeItem('role'); // <-- Limpiar el rol al salir
     navigate('/login');
   };
 
@@ -60,7 +70,6 @@ const Layout = () => {
     }
   };
 
-  // Estilo activo para los enlaces de navegación
   const navLinkStyle = ({ isActive }) => ({
     color: isActive ? '#f8fafc' : '#94a3b8',
     textDecoration: 'none',
@@ -85,7 +94,6 @@ const Layout = () => {
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
       }}>
 
-        {/* Sección Izquierda: Logo y Menú de Navegación */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '30px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <img src="/logo.svg" alt="OmniStock Logo" style={{ width: '32px', height: '32px' }} />
@@ -96,38 +104,44 @@ const Layout = () => {
 
           <nav style={{ display: 'flex', gap: '10px' }}>
             <NavLink to="/inventario" style={navLinkStyle}>Inventario</NavLink>
-            <NavLink to="/usuarios" style={navLinkStyle}>Usuarios</NavLink>
+
+            {/* Solo mostrar la pestaña de Usuarios si es ADMIN */}
+            {role === 'ADMIN' && (
+              <NavLink to="/usuarios" style={navLinkStyle}>Usuarios</NavLink>
+            )}
           </nav>
         </div>
 
-        {/* Sección derecha agrupada */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
 
           <span style={{ color: '#94a3b8', fontSize: '14px' }}>
             Hola, <strong style={{ color: '#f8fafc' }}>{username}</strong>
           </span>
 
-          <button
-            onClick={exportGlobalKardex}
-            style={{
-              backgroundColor: '#3b82f6',
-              border: 'none',
-              color: 'white',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              fontSize: '13px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              transition: 'all 0.2s'
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#2563eb'; }}
-            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#3b82f6'; }}
-          >
-            📥 Reporte Global
-          </button>
+          {/* Solo mostrar el botón de Reporte Global si es ADMIN */}
+          {role === 'ADMIN' && (
+            <button
+              onClick={exportGlobalKardex}
+              style={{
+                backgroundColor: '#3b82f6',
+                border: 'none',
+                color: 'white',
+                padding: '8px 16px',
+                borderRadius: '6px',
+                fontSize: '13px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#2563eb'; }}
+              onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#3b82f6'; }}
+            >
+              📥 Reporte Global
+            </button>
+          )}
 
           <button
             onClick={handleLogout}
@@ -163,10 +177,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Ruta pública para el Login */}
         <Route path="/login" element={<Login />} />
 
-        {/* Rutas protegidas por el componente PrivateRoute */}
         <Route path="/" element={
           <PrivateRoute>
             <Layout />
@@ -174,7 +186,13 @@ function App() {
         }>
           <Route index element={<Navigate to="/inventario" replace />} />
           <Route path="inventario" element={<Inventory />} />
-          <Route path="usuarios" element={<Users />} /> {/* <-- Nueva ruta añadida */}
+
+          {/* Proteger la ruta de usuarios con requireAdmin={true} */}
+          <Route path="usuarios" element={
+            <PrivateRoute requireAdmin={true}>
+              <Users />
+            </PrivateRoute>
+          } />
         </Route>
       </Routes>
     </BrowserRouter>
