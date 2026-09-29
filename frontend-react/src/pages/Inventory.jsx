@@ -11,16 +11,14 @@ export default function Inventory() {
     const [movements, setMovements] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Estados para la paginación
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
-    // Función para recibir y enviar la página actual
+    // Agregamos &sort=id&order=asc para forzar el orden ascendente
     const fetchProducts = async (search = '', page = 1) => {
         try {
-            const response = await api.get(`/products?search=${search}&page=${page}&limit=10`);
+            const response = await api.get(`/products?search=${search}&page=${page}&limit=10&sort=id&order=asc`);
             setData(response.data.data);
-            // Guardamos la información de paginación que viene desde Express
             setTotalPages(response.data.meta.totalPages);
             setCurrentPage(response.data.meta.currentPage);
         } catch (error) {
@@ -54,7 +52,7 @@ export default function Inventory() {
                 quantity: quantity,
                 notes: notes
             });
-            fetchProducts(searchTerm, currentPage); // Recargar manteniendo la página actual
+            fetchProducts(searchTerm, currentPage);
         } catch (error) {
             console.error("Error al registrar el movimiento:", error);
             alert("Ocurrió un error al registrar el movimiento.");
@@ -68,7 +66,7 @@ export default function Inventory() {
             setNewProduct({ name: '', sku: '' });
             setShowForm(false);
             setSearchTerm('');
-            setCurrentPage(1); // Al crear, volvemos a la página 1
+            setCurrentPage(1);
             fetchProducts('', 1);
         } catch (error) {
             console.error("Error al crear producto:", error);
@@ -161,7 +159,7 @@ export default function Inventory() {
                         value={searchTerm}
                         onChange={(e) => {
                             setSearchTerm(e.target.value);
-                            setCurrentPage(1); // Regresar a la página 1 al buscar
+                            setCurrentPage(1);
                         }}
                         style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #4b5563', backgroundColor: '#374151', color: 'white' }}
                     />
@@ -236,7 +234,6 @@ export default function Inventory() {
                 </table>
             </div>
 
-            {/* Controles de Paginación */}
             {totalPages > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '15px' }}>
                     <button
@@ -261,7 +258,6 @@ export default function Inventory() {
                 </div>
             )}
 
-            {/* Modal del Historial (Kardex) */}
             {historyModal.isOpen && (
                 <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
                     <div style={{ backgroundColor: '#1f2937', padding: '20px', borderRadius: '8px', width: '90%', maxWidth: '800px', maxHeight: '80vh', overflowY: 'auto', color: 'white' }}>
