@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
 const inventoryRoutes = require('./routes/inventory');
+const authRoutes = require('./routes/auth'); // Rutas de autenticación
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,9 +11,11 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Montar el enrutador de inventario
+// Montar los enrutadores
 app.use('/api', inventoryRoutes);
+app.use('/api/auth', authRoutes);
 
+// Ruta de diagnóstico
 app.get('/api/db-status', async (req, res) => {
     try {
         const result = await pool.query('SELECT NOW() AS system_time');
