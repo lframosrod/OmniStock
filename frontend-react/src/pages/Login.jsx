@@ -3,35 +3,29 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 
 export default function Login() {
-    const [isRegistering, setIsRegistering] = useState(false);
     const [formData, setFormData] = useState({ username: '', password: '' });
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setIsLoading(true);
 
         try {
-            if (isRegistering) {
-                // Crear usuario
-                await api.post('/auth/register', { ...formData, role: 'ADMIN' });
-                alert("Administrador creado con éxito. Ahora puedes iniciar sesión.");
-                setIsRegistering(false);
-                setFormData({ username: '', password: '' });
-            } else {
-                // Iniciar sesión
-                const response = await api.post('/auth/login', formData);
+            const response = await api.post('/auth/login', formData);
 
-                // Guardar el token y datos del usuario en el navegador
-                localStorage.setItem('token', response.data.token);
-                localStorage.setItem('username', response.data.user.username);
+            // Guardar el token y datos del usuario en el navegador
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('username', response.data.user.username);
 
-                // Redirigir al inventario
-                navigate('/inventario');
-            }
+            // Redirigir al inventario
+            navigate('/inventario');
         } catch (err) {
-            setError(err.response?.data?.error || "Ocurrió un error en el servidor");
+            setError(err.response?.data?.error || "Credenciales inválidas o error de conexión");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -47,7 +41,7 @@ export default function Login() {
                 </div>
 
                 <h2 style={{ color: '#f8fafc', fontSize: '18px', marginBottom: '20px', textAlign: 'center' }}>
-                    {isRegistering ? 'Crear Administrador' : 'Iniciar Sesión'}
+                    Iniciar Sesión
                 </h2>
 
                 {error && (
@@ -79,21 +73,23 @@ export default function Login() {
                     </div>
                     <button
                         type="submit"
-                        style={{ backgroundColor: '#3b82f6', color: 'white', border: 'none', padding: '12px', borderRadius: '6px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}
+                        disabled={isLoading}
+                        style={{
+                            backgroundColor: isLoading ? '#475569' : '#3b82f6',
+                            color: 'white',
+                            border: 'none',
+                            padding: '12px',
+                            borderRadius: '6px',
+                            fontSize: '14px',
+                            fontWeight: 'bold',
+                            cursor: isLoading ? 'not-allowed' : 'pointer',
+                            marginTop: '10px',
+                            transition: 'background-color 0.2s'
+                        }}
                     >
-                        {isRegistering ? 'Registrar Usuario' : 'Acceder al Sistema'}
+                        {isLoading ? 'Accediendo...' : 'Acceder al Sistema'}
                     </button>
                 </form>
-
-                <div style={{ textAlign: 'center', marginTop: '20px' }}>
-                    <button
-                        type="button"
-                        onClick={() => { setIsRegistering(!isRegistering); setError(''); }}
-                        style={{ background: 'none', border: 'none', color: '#94a3b8', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}
-                    >
-                        {isRegistering ? 'Ya tengo una cuenta' : 'Crear el primer administrador'}
-                    </button>
-                </div>
             </div>
         </div>
     );
