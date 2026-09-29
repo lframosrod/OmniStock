@@ -14,6 +14,10 @@ export default function Inventory() {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
+    // Estados para el Modal de Movimiento
+    const [movementModal, setMovementModal] = useState({ isOpen: false, productId: null, productName: '', type: '' });
+    const [movementForm, setMovementForm] = useState({ quantity: '', notes: '' });
+
     const fetchProducts = async (search = '', page = 1) => {
         try {
             const response = await api.get(`/products?search=${search}&page=${page}&limit=10&sort=id&order=asc`);
@@ -32,25 +36,32 @@ export default function Inventory() {
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm, currentPage]);
 
-    const handleMovement = async (productId, type) => {
-        const qtyInput = window.prompt(`¿Cuántas unidades de ${type} deseas registrar?`);
-        if (!qtyInput) return;
+    // Función para ABRIR el modal
+    const openMovementModal = (productId, productName, type) => {
+        setMovementModal({ isOpen: true, productId, productName, type });
+        setMovementForm({ quantity: '', notes: '' }); // Limpiar formulario
+    };
 
-        const quantity = parseInt(qtyInput, 10);
+    // Función para ENVIAR el formulario del modal
+    const handleMovementSubmit = async (e) => {
+        e.preventDefault();
+
+        const quantity = parseInt(movementForm.quantity, 10);
         if (isNaN(quantity) || quantity <= 0) {
             alert("Por favor, ingresa una cantidad válida mayor a 0.");
             return;
         }
 
-        const notes = window.prompt("Agrega una nota para este movimiento (opcional):") || `Movimiento manual desde interfaz`;
+        const notes = movementForm.notes.trim() || `Movimiento manual desde interfaz`;
 
         try {
             await api.post('/movements', {
-                product_id: productId,
-                movement_type: type,
+                product_id: movementModal.productId,
+                movement_type: movementModal.type,
                 quantity: quantity,
                 notes: notes
             });
+            setMovementModal({ isOpen: false, productId: null, productName: '', type: '' });
             fetchProducts(searchTerm, currentPage);
         } catch (error) {
             console.error("Error al registrar el movimiento:", error);
@@ -105,6 +116,7 @@ export default function Inventory() {
         document.body.removeChild(link);
     };
 
+    // Ajuste a botones de la tabla
     const columns = [
         { header: 'ID', accessorKey: 'id', cell: ({ row }) => <span style={{ color: '#94a3b8' }}>#{row.original.id}</span> },
         { header: 'Nombre del Producto', accessorKey: 'name', cell: ({ row }) => <strong style={{ color: '#f8fafc' }}>{row.original.name}</strong> },
@@ -130,10 +142,10 @@ export default function Inventory() {
             id: 'acciones',
             cell: ({ row }) => (
                 <div style={{ display: 'flex', gap: '8px' }}>
-                    <button className="btn btn-success" onClick={() => handleMovement(row.original.id, 'ENTRADA')}>
+                    <button className="btn btn-success" onClick={() => openMovementModal(row.original.id, row.original.name, 'ENTRADA')}>
                         + Entrada
                     </button>
-                    <button className="btn btn-danger" onClick={() => handleMovement(row.original.id, 'SALIDA')}>
+                    <button className="btn btn-danger" onClick={() => openMovementModal(row.original.id, row.original.name, 'SALIDA')}>
                         - Salida
                     </button>
                     <button className="btn btn-outline" onClick={() => handleViewHistory(row.original.id, row.original.name)}>
@@ -148,7 +160,6 @@ export default function Inventory() {
 
     return (
         <>
-            {/* 1. Inyección de CSS Profesional */}
             <style>{`
         .card { background-color: #1e293b; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #334155; padding: 24px; }
         .table-container { overflow-x: auto; margin-top: 20px; border-radius: 8px; border: 1px solid #334155; }
@@ -185,7 +196,6 @@ export default function Inventory() {
       `}</style>
 
             <div className="card">
-                {/* Cabecera de la tarjeta */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
                     <div>
                         <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>Gestión de Inventario</h2>
@@ -212,7 +222,6 @@ export default function Inventory() {
                     </button>
                 </div>
 
-                {/* Formulario de Nuevo Producto */}
                 {showForm && (
                     <div style={{ backgroundColor: '#0f172a', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #334155' }}>
                         <h3 style={{ marginTop: 0, marginBottom: '15px', fontSize: '15px', color: '#f8fafc' }}>Registrar Nuevo Producto</h3>
@@ -230,7 +239,6 @@ export default function Inventory() {
                     </div>
                 )}
 
-                {/* Tabla Principal */}
                 <div className="table-container">
                     <table className="os-table">
                         <thead>
@@ -261,7 +269,6 @@ export default function Inventory() {
                     </table>
                 </div>
 
-                {/* Paginación */}
                 {totalPages > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px' }}>
                         <button
@@ -286,6 +293,74 @@ export default function Inventory() {
                     </div>
                 )}
             </div>
+
+            {/* Modal de Registro de Movimientos */}
+            {movementModal.isOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-content" style={{ maxWidth: '450px' }}>
+                        <div className="modal-header">
+                            <h3 style={{ margin: 0, fontSize: '18px' }}>
+                                Registrar <span style={{ color: movementModal.type === 'ENTRADA' ? '#34d399' : '#f87171' }}>{movementModal.type}</span>
+                            </h3>
+                            <button
+                                onClick={() => setMovementModal({ isOpen: false, productId: null, productName: '', type: '' })}
+                                style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '24px', cursor: 'pointer', padding: '0 5px' }}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleMovementSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                            <div>
+                                <p style={{ margin: '0 0 5px 0', color: '#94a3b8', fontSize: '13px' }}>Producto seleccionado:</p>
+                                <p style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#f8fafc' }}>{movementModal.productName}</p>
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '6px' }}>Cantidad de unidades *</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    required
+                                    className="input-field"
+                                    placeholder="Ej. 10"
+                                    value={movementForm.quantity}
+                                    onChange={(e) => setMovementForm({ ...movementForm, quantity: e.target.value })}
+                                    autoFocus
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '13px', color: '#94a3b8', marginBottom: '6px' }}>Justificación / Notas (Opcional)</label>
+                                <textarea
+                                    className="input-field"
+                                    placeholder="Ej. Reabastecimiento de stock..."
+                                    rows="3"
+                                    style={{ resize: 'vertical' }}
+                                    value={movementForm.notes}
+                                    onChange={(e) => setMovementForm({ ...movementForm, notes: e.target.value })}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline"
+                                    onClick={() => setMovementModal({ isOpen: false, productId: null, productName: '', type: '' })}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    className={`btn ${movementModal.type === 'ENTRADA' ? 'btn-success' : 'btn-danger'}`}
+                                >
+                                    Confirmar {movementModal.type}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
             {/* Modal del Historial (Kardex) */}
             {historyModal.isOpen && (
