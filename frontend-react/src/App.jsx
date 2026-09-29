@@ -1,8 +1,24 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import Inventory from './pages/Inventory';
+import Login from './pages/Login'; // <-- Importamos el componente Login
 import api from './api/axios';
 
+// Componente para proteger las rutas privadas
+const PrivateRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  return token ? children : <Navigate to="/login" replace />;
+};
+
 const Layout = () => {
+  const navigate = useNavigate();
+  const username = localStorage.getItem('username'); // Recuperar el nombre del usuario guardado en el Login
+
+  // Función para cerrar sesión
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    navigate('/login');
+  };
 
   const exportGlobalKardex = async () => {
     try {
@@ -62,28 +78,55 @@ const Layout = () => {
           </h1>
         </div>
 
-        {/* Botón actualizado al color azul sólido (Primary) */}
-        <button
-          onClick={exportGlobalKardex}
-          style={{
-            backgroundColor: '#3b82f6', // Azul sólido
-            border: 'none',             // Sin borde
-            color: 'white',             // Texto blanco
-            padding: '8px 16px',
-            borderRadius: '6px',
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.2s'
-          }}
-          onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#2563eb'; }} // Azul más oscuro en Hover
-          onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#3b82f6'; }}  // Vuelve al color original
-        >
-          📥 Reporte Global
-        </button>
+        {/* Sección derecha agrupada */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+
+          <span style={{ color: '#94a3b8', fontSize: '14px' }}>
+            Hola, <strong style={{ color: '#f8fafc' }}>{username}</strong>
+          </span>
+
+          <button
+            onClick={exportGlobalKardex}
+            style={{
+              backgroundColor: '#3b82f6',
+              border: 'none',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#2563eb'; }}
+            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = '#3b82f6'; }}
+          >
+            📥 Reporte Global
+          </button>
+
+          <button
+            onClick={handleLogout}
+            style={{
+              backgroundColor: 'transparent',
+              border: '1px solid #ef4444',
+              color: '#ef4444',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'; }}
+            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
+          >
+            Cerrar Sesión
+          </button>
+
+        </div>
       </header>
 
       <main style={{ padding: '24px 32px', width: '100%', boxSizing: 'border-box' }}>
@@ -98,7 +141,15 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Layout />}>
+        {/* Ruta pública para el Login */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Rutas protegidas por el componente PrivateRoute */}
+        <Route path="/" element={
+          <PrivateRoute>
+            <Layout />
+          </PrivateRoute>
+        }>
           <Route index element={<Navigate to="/inventario" replace />} />
           <Route path="inventario" element={<Inventory />} />
         </Route>
