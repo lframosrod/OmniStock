@@ -18,6 +18,9 @@ export default function Inventory() {
     const [movementModal, setMovementModal] = useState({ isOpen: false, productId: null, productName: '', type: '' });
     const [movementForm, setMovementForm] = useState({ quantity: '', notes: '' });
 
+    // Leer rol de usuario
+    const role = localStorage.getItem('role');
+
     const fetchProducts = async (search = '', page = 1) => {
         try {
             const response = await api.get(`/products?search=${search}&page=${page}&limit=10&sort=id&order=asc`);
@@ -214,12 +217,14 @@ export default function Inventory() {
                         />
                     </div>
 
-                    <button
-                        className={`btn ${showForm ? 'btn-secondary' : 'btn-primary'}`}
-                        onClick={() => setShowForm(!showForm)}
-                    >
-                        {showForm ? '✕ Cancelar' : '+ Nuevo Producto'}
-                    </button>
+                    {role === 'ADMIN' && (
+                        <button
+                            className={`btn ${showForm ? 'btn-secondary' : 'btn-primary'}`}
+                            onClick={() => setShowForm(!showForm)}
+                        >
+                            {showForm ? '✕ Cancelar' : '+ Nuevo Producto'}
+                        </button>
+                    )}
                 </div>
 
                 {showForm && (
