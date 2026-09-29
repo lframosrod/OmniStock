@@ -86,4 +86,26 @@ router.get('/products/:id/movements', async (req, res) => {
     }
 });
 
+// Obtener el historial completo (Kardex Global)
+router.get('/movements/all', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                m.created_at, 
+                p.name AS product_name, 
+                p.sku, 
+                m.movement_type, 
+                m.quantity, 
+                m.notes 
+            FROM movements m
+            JOIN products p ON m.product_id = p.id
+            ORDER BY m.created_at DESC
+        `;
+        const result = await pool.query(query);
+        res.json({ data: result.rows });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 module.exports = router;
