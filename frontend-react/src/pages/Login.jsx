@@ -19,6 +19,7 @@ export default function Login() {
             // Guardar el token y datos del usuario en el navegador
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('username', response.data.user.username);
+            localStorage.setItem('role', response.data.user.role);
 
             // Redirigir al inventario
             navigate('/inventario');

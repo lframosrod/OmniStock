@@ -3,11 +3,12 @@ const router = express.Router();
 const pool = require('../db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { verifyToken, isAdmin } = require('../middleware'); // <-- NUEVA LÍNEA: Importamos los candados
 
 const JWT_SECRET = 'omnistock_super_secret_key_2026';
 
-// Ruta para crear un usuario (Solo para setup inicial o administradores)
-router.post('/register', async (req, res) => {
+// Ruta para crear un usuario (Protegida: Solo Administradores)
+router.post('/register', verifyToken, isAdmin, async (req, res) => {
     const { username, password, role } = req.body;
     try {
         // Encriptar la contraseña (nunca se guarda en texto plano)
@@ -24,7 +25,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// Ruta de Login
+// Ruta de Login (Pública: Cualquiera puede intentar iniciar sesión)
 router.post('/login', async (req, res) => {
     const { username, password } = req.body;
     try {
@@ -42,7 +43,7 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Credenciales inválidas' });
         }
 
-        // Generar el JSON Web Token (JWT) válido por 8 horas
+        // Generar el JSON Web Token (JWT)
         const token = jwt.sign(
             { id: user.id, username: user.username, role: user.role },
             JWT_SECRET,
@@ -55,6 +56,16 @@ router.post('/login', async (req, res) => {
             token,
             user: { id: user.id, username: user.username, role: user.role }
         });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Obtener lista de usuarios (Protegida: Solo Administradores)
+router.get('/users', verifyToken, isAdmin, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, username, role, created_at FROM users ORDER BY id ASC');
+        res.json({ data: result.rows });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
