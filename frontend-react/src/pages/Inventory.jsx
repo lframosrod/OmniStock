@@ -7,22 +7,30 @@ export default function Inventory() {
     const [showForm, setShowForm] = useState(false);
     const [newProduct, setNewProduct] = useState({ name: '', sku: '' });
 
-    // Estados para el modal del Kardex
     const [historyModal, setHistoryModal] = useState({ isOpen: false, productName: '' });
     const [movements, setMovements] = useState([]);
 
-    const fetchProducts = async () => {
+    // Nuevo estado para la búsqueda
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // La función ahora acepta el término de búsqueda y lo envía como Query Parameter
+    const fetchProducts = async (search = '') => {
         try {
-            const response = await api.get('/products');
+            const response = await api.get(`/products?search=${search}`);
             setData(response.data.data);
         } catch (error) {
             console.error("Error al cargar productos:", error);
         }
     };
 
+    // Efecto con Debounce (retraso) para buscar mientras el usuario escribe
     useEffect(() => {
-        fetchProducts();
-    }, []);
+        const delayDebounceFn = setTimeout(() => {
+            fetchProducts(searchTerm);
+        }, 300);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm]);
 
     const handleMovement = async (productId, type) => {
         const qtyInput = window.prompt(`¿Cuántas unidades de ${type} deseas registrar?`);
@@ -43,7 +51,7 @@ export default function Inventory() {
                 quantity: quantity,
                 notes: notes
             });
-            fetchProducts();
+            fetchProducts(searchTerm); // Recargar manteniendo el filtro actual
         } catch (error) {
             console.error("Error al registrar el movimiento:", error);
             alert("Ocurrió un error al registrar el movimiento.");
@@ -56,14 +64,14 @@ export default function Inventory() {
             await api.post('/products', newProduct);
             setNewProduct({ name: '', sku: '' });
             setShowForm(false);
-            fetchProducts();
+            setSearchTerm(''); // Limpiar búsqueda para ver el producto recién creado
+            fetchProducts('');
         } catch (error) {
             console.error("Error al crear producto:", error);
             alert("Error al crear el producto. Revisa que el SKU no esté duplicado.");
         }
     };
 
-    // Función para consultar los movimientos y abrir el modal
     const handleViewHistory = async (productId, productName) => {
         try {
             const response = await api.get(`/products/${productId}/movements`);
@@ -116,19 +124,31 @@ export default function Inventory() {
 
     return (
         <div style={{ position: 'relative' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
                 <h2>Listado de Productos</h2>
+
+                {/* Barra de búsqueda */}
+                <div style={{ flexGrow: 1, maxWidth: '400px', marginLeft: '20px' }}>
+                    <input
+                        type="text"
+                        placeholder="🔍 Buscar por nombre o SKU..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #4b5563', backgroundColor: '#374151', color: 'white' }}
+                    />
+                </div>
+
                 <button
                     onClick={() => setShowForm(!showForm)}
-                    style={{ backgroundColor: showForm ? '#6b7280' : '#3b82f6', color: 'white', border: 'none', padding: '8px 15px', cursor: 'pointer', borderRadius: '4px' }}
+                    style={{ backgroundColor: showForm ? '#6b7280' : '#3b82f6', color: 'white', border: 'none', padding: '10px 15px', cursor: 'pointer', borderRadius: '4px' }}
                 >
                     {showForm ? 'Cancelar' : 'Nuevo Producto'}
                 </button>
             </div>
 
             {showForm && (
-                <form onSubmit={handleCreateProduct} style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#1f2937', borderRadius: '8px', display: 'flex', gap: '15px', alignItems: 'flex-end' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                <form onSubmit={handleCreateProduct} style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#1f2937', borderRadius: '8px', display: 'flex', gap: '15px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flexGrow: 1 }}>
                         <label style={{ fontSize: '14px', color: '#d1d5db' }}>Nombre del Producto</label>
                         <input
                             type="text"
@@ -138,7 +158,7 @@ export default function Inventory() {
                             style={{ padding: '8px', borderRadius: '4px', border: '1px solid #4b5563', backgroundColor: '#374151', color: 'white' }}
                         />
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flexGrow: 1 }}>
                         <label style={{ fontSize: '14px', color: '#d1d5db' }}>SKU</label>
                         <input
                             type="text"
@@ -154,35 +174,44 @@ export default function Inventory() {
                 </form>
             )}
 
-            <table border="1" cellPadding="10" style={{ borderCollapse: 'collapse', width: '100%', textAlign: 'left' }}>
-                <thead style={{ backgroundColor: '#f3f4f6', color: '#111827' }}>
-                    {table.getHeaderGroups().map(headerGroup => (
-                        <tr key={headerGroup.id}>
-                            {headerGroup.headers.map(header => (
-                                <th key={header.id}>
-                                    {flexRender(header.column.columnDef.header, header.getContext())}
-                                </th>
-                            ))}
-                        </tr>
-                    ))}
-                </thead>
-                <tbody>
-                    {table.getRowModel().rows.map(row => (
-                        <tr key={row.id}>
-                            {row.getVisibleCells().map(cell => (
-                                <td key={cell.id}>
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+            <div style={{ overflowX: 'auto' }}>
+                <table border="1" cellPadding="10" style={{ borderCollapse: 'collapse', width: '100%', textAlign: 'left' }}>
+                    <thead style={{ backgroundColor: '#f3f4f6', color: '#111827' }}>
+                        {table.getHeaderGroups().map(headerGroup => (
+                            <tr key={headerGroup.id}>
+                                {headerGroup.headers.map(header => (
+                                    <th key={header.id}>
+                                        {flexRender(header.column.columnDef.header, header.getContext())}
+                                    </th>
+                                ))}
+                            </tr>
+                        ))}
+                    </thead>
+                    <tbody>
+                        {table.getRowModel().rows.map(row => (
+                            <tr key={row.id}>
+                                {row.getVisibleCells().map(cell => (
+                                    <td key={cell.id}>
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                        {data.length === 0 && (
+                            <tr>
+                                <td colSpan={columns.length} style={{ textAlign: 'center', padding: '20px' }}>
+                                    No se encontraron productos coincidentes.
                                 </td>
-                            ))}
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
 
             {/* Modal del Historial (Kardex) */}
             {historyModal.isOpen && (
                 <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-                    <div style={{ backgroundColor: '#1f2937', padding: '20px', borderRadius: '8px', width: '80%', maxWidth: '800px', maxHeight: '80vh', overflowY: 'auto', color: 'white' }}>
+                    <div style={{ backgroundColor: '#1f2937', padding: '20px', borderRadius: '8px', width: '90%', maxWidth: '800px', maxHeight: '80vh', overflowY: 'auto', color: 'white' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                             <h3 style={{ margin: 0 }}>Kardex: {historyModal.productName}</h3>
                             <button
