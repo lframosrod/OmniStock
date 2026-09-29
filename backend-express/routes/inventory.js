@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
-// Crear un nuevo producto
+// 1. Crear un nuevo producto
 router.post('/products', async (req, res) => {
     const { name, sku, category_id } = req.body;
     try {
@@ -16,7 +16,7 @@ router.post('/products', async (req, res) => {
     }
 });
 
-// Registrar un movimiento
+// 2. Registrar un movimiento
 router.post('/movements', async (req, res) => {
     const { product_id, movement_type, quantity, notes } = req.body;
     try {
@@ -30,18 +30,16 @@ router.post('/movements', async (req, res) => {
     }
 });
 
-// Obtener productos
+// 3. Obtener productos (Alimenta la tabla principal)
 router.get('/products', async (req, res) => {
     try {
         const { page = 1, limit = 10, search = '', sort = 'id', order = 'desc' } = req.query;
         const offset = (page - 1) * limit;
 
-        // Validar columnas de ordenamiento para evitar Inyección SQL
         const validSortColumns = ['id', 'name', 'sku', 'current_stock'];
         const sortColumn = validSortColumns.includes(sort) ? sort : 'id';
         const sortOrder = order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
-        // ILIKE permite búsqueda insensible a mayúsculas/minúsculas en PostgreSQL
         const query = `
             SELECT * FROM products 
             WHERE name ILIKE $1 OR sku ILIKE $1 
@@ -51,7 +49,6 @@ router.get('/products', async (req, res) => {
         const values = [`%${search}%`, limit, offset];
         const result = await pool.query(query, values);
 
-        // Obtener el total de registros para los metadatos del frontend
         const countQuery = `SELECT COUNT(*) FROM products WHERE name ILIKE $1 OR sku ILIKE $1`;
         const countResult = await pool.query(countQuery, [`%${search}%`]);
         const totalItems = parseInt(countResult.rows[0].count);
@@ -69,7 +66,7 @@ router.get('/products', async (req, res) => {
     }
 });
 
-// Obtener historial de movimientos de un producto (Kardex)
+// 4. Obtener historial de movimientos de un producto individual
 router.get('/products/:id/movements', async (req, res) => {
     const { id } = req.params;
     try {
@@ -80,6 +77,28 @@ router.get('/products/:id/movements', async (req, res) => {
             ORDER BY created_at DESC
         `;
         const result = await pool.query(query, [id]);
+        res.json({ data: result.rows });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 5. Obtener el historial completo (Kardex Global) para el CSV
+router.get('/movements/all', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                m.created_at, 
+                p.name AS product_name, 
+                p.sku, 
+                m.movement_type, 
+                m.quantity, 
+                m.notes 
+            FROM movements m
+            JOIN products p ON m.product_id = p.id
+            ORDER BY m.created_at DESC
+        `;
+        const result = await pool.query(query);
         res.json({ data: result.rows });
     } catch (error) {
         res.status(500).json({ error: error.message });
