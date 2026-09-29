@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, NavLink } from 'react-router-dom';
 import Inventory from './pages/Inventory';
-import Login from './pages/Login'; // <-- Importamos el componente Login
+import Login from './pages/Login';
+import Users from './pages/Users'; // <-- Importamos el componente Users
 import api from './api/axios';
 
 // Componente para proteger las rutas privadas
@@ -59,6 +60,18 @@ const Layout = () => {
     }
   };
 
+  // Estilo activo para los enlaces de navegación
+  const navLinkStyle = ({ isActive }) => ({
+    color: isActive ? '#f8fafc' : '#94a3b8',
+    textDecoration: 'none',
+    fontWeight: '500',
+    fontSize: '14px',
+    padding: '8px 12px',
+    borderRadius: '6px',
+    backgroundColor: isActive ? '#334155' : 'transparent',
+    transition: 'all 0.2s'
+  });
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#0f172a', color: '#f8fafc', fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}>
 
@@ -71,11 +84,20 @@ const Layout = () => {
         alignItems: 'center',
         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img src="/logo.svg" alt="OmniStock Logo" style={{ width: '32px', height: '32px' }} />
-          <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '600', letterSpacing: '0.5px' }}>
-            Omni<span style={{ color: '#3b82f6' }}>Stock</span>
-          </h1>
+
+        {/* Sección Izquierda: Logo y Menú de Navegación */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '30px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <img src="/logo.svg" alt="OmniStock Logo" style={{ width: '32px', height: '32px' }} />
+            <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '600', letterSpacing: '0.5px' }}>
+              Omni<span style={{ color: '#3b82f6' }}>Stock</span>
+            </h1>
+          </div>
+
+          <nav style={{ display: 'flex', gap: '10px' }}>
+            <NavLink to="/inventario" style={navLinkStyle}>Inventario</NavLink>
+            <NavLink to="/usuarios" style={navLinkStyle}>Usuarios</NavLink>
+          </nav>
         </div>
 
         {/* Sección derecha agrupada */}
@@ -152,6 +174,7 @@ function App() {
         }>
           <Route index element={<Navigate to="/inventario" replace />} />
           <Route path="inventario" element={<Inventory />} />
+          <Route path="usuarios" element={<Users />} /> {/* <-- Nueva ruta añadida */}
         </Route>
       </Routes>
     </BrowserRouter>
