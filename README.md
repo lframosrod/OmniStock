@@ -17,10 +17,7 @@ OmniStock es una plataforma web de nivel empresarial diseñada para la gestión 
 - [Tecnologías](#-tecnologías)
 - [Requisitos Previos](#-requisitos-previos)
 - [Instalación y Despliegue](#-instalación-y-despliegue)
-- [Variables de Entorno](#-variables-de-entorno)
 - [Estructura del Proyecto](#-estructura-del-proyecto)
-- [Guía de Contribución](#-guía-de-contribución)
-- [Licencia](#-licencia)
 
 ---
 
@@ -88,11 +85,8 @@ Asegúrate de tener instalado el siguiente software en tu máquina local:
    cd omnistock
    ```
 
-2. **Configurar las variables de entorno:**
-   Crea un archivo `.env` en la raíz del proyecto (backend) basándote en el archivo de ejemplo (ver sección de Variables de Entorno).
-
-3. **Levantar los contenedores:**
-   Ejecuta el siguiente comando para construir y levantar toda la infraestructura:
+2. **Levantar los contenedores:**
+   Las variables de conexión y entorno ya se encuentran preconfiguradas en el archivo `compose.yml` para un despliegue rápido en desarrollo. Solo ejecuta el siguiente comando para construir y levantar toda la infraestructura:
 
    ```bash
    podman-compose up -d --build
@@ -100,25 +94,9 @@ Asegúrate de tener instalado el siguiente software en tu máquina local:
 
    *(Si utilizas Docker, reemplaza `podman-compose` por `docker compose`)*
 
-4. **Acceder a la aplicación:**
+3. **Acceder a la aplicación:**
    - **Plataforma Web:** `http://localhost:8080`
    - **pgAdmin (Gestor de BD):** `http://localhost:5050`
-
----
-
-## 🔐 Variables de Entorno
-
-Debes crear un archivo `.env` en la carpeta `backend-express/` con las siguientes variables:
-
-```env
-PORT=3000
-DB_HOST=db
-DB_USER=admin
-DB_PASSWORD=adminpassword
-DB_NAME=omnistock
-DB_PORT=5432
-JWT_SECRET=tu_super_secreto_aqui
-```
 
 ---
 
@@ -144,29 +122,6 @@ omnistock/
 │   └── default.conf
 └── compose.yml            # Orquestación de servicios (Podman/Docker)
 ```
-
----
-
-## 🤝 Guía de Contribución
-
-Nos guiamos por los estándares de la industria para mantener el código limpio y rastreable:
-
-1. Realiza un Fork del proyecto.
-2. Crea una rama para tu feature o corrección:
-   `git checkout -b feature/nueva-caracteristica` o `git checkout -b fix/correccion-bug`
-3. Sigue el estándar de **Conventional Commits** al registrar tus cambios:
-   - `feat: añade reporte por fechas`
-   - `fix: corrige validación de token en Dashboard`
-   - `refactor: optimiza consulta a la base de datos`
-4. Sube los cambios a tu rama:
-   `git push origin feature/nueva-caracteristica`
-5. Abre un **Pull Request** (PR) detallando tus cambios.
-
----
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
 
 ---
 *Desarrollado con pasión para la gestión eficiente de recursos.* 🚀
