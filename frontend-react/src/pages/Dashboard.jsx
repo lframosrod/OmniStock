@@ -32,7 +32,7 @@ export default function Dashboard() {
     return (
         <>
             <style>{`
-        .dashboard-container { display: flex; flexDirection: column; gap: 24px; }
+        .dashboard-container { display: flex; flex-direction: column; gap: 24px; }
         .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
         .metric-card { background-color: #1e293b; border-radius: 12px; padding: 24px; border: 1px solid #334155; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .metric-title { font-size: 14px; color: #94a3b8; font-weight: 500; margin-bottom: 8px; }
