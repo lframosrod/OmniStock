@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, NavLink } 
 import Inventory from './pages/Inventory';
 import Login from './pages/Login';
 import Users from './pages/Users';
+import Dashboard from './pages/Dashboard';
 import api from './api/axios';
 
 // Componente para proteger las rutas privadas (validación de rol)
@@ -109,6 +110,8 @@ const Layout = () => {
             {role === 'ADMIN' && (
               <NavLink to="/usuarios" style={navLinkStyle}>Usuarios</NavLink>
             )}
+
+            <NavLink to="/dashboard" style={navLinkStyle}>Dashboard</NavLink>
           </nav>
         </div>
 
@@ -193,6 +196,8 @@ function App() {
               <Users />
             </PrivateRoute>
           } />
+
+          <Route path="dashboard" element={<Dashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>
