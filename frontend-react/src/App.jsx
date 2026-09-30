@@ -104,14 +104,14 @@ const Layout = () => {
           </div>
 
           <nav style={{ display: 'flex', gap: '10px' }}>
+            <NavLink to="/dashboard" style={navLinkStyle}>Dashboard</NavLink>
+
             <NavLink to="/inventario" style={navLinkStyle}>Inventario</NavLink>
 
             {/* Solo mostrar la pestaña de Usuarios si es ADMIN */}
             {role === 'ADMIN' && (
               <NavLink to="/usuarios" style={navLinkStyle}>Usuarios</NavLink>
             )}
-
-            <NavLink to="/dashboard" style={navLinkStyle}>Dashboard</NavLink>
           </nav>
         </div>
 
@@ -187,7 +187,7 @@ function App() {
             <Layout />
           </PrivateRoute>
         }>
-          <Route index element={<Navigate to="/inventario" replace />} />
+          <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="inventario" element={<Inventory />} />
 
           {/* Proteger la ruta de usuarios con requireAdmin={true} */}
