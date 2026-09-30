@@ -2,8 +2,9 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
-const inventoryRoutes = require('./routes/inventory');
+const inventoryRoutes = require('./routes/inventory'); // Rutas de inventario
 const authRoutes = require('./routes/auth'); // Rutas de autenticación
+const dashboardRoutes = require('./routes/dashboard'); // Rutas de dashboard
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,6 +15,7 @@ app.use(express.json());
 // Montar los enrutadores
 app.use('/api', inventoryRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Ruta de diagnóstico
 app.get('/api/db-status', async (req, res) => {

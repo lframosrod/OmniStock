@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet, useNavigate, NavLink } 
 import Inventory from './pages/Inventory';
 import Login from './pages/Login';
 import Users from './pages/Users';
+import Dashboard from './pages/Dashboard';
 import api from './api/axios';
 
 // Componente para proteger las rutas privadas (validación de rol)
@@ -103,6 +104,8 @@ const Layout = () => {
           </div>
 
           <nav style={{ display: 'flex', gap: '10px' }}>
+            <NavLink to="/dashboard" style={navLinkStyle}>Dashboard</NavLink>
+
             <NavLink to="/inventario" style={navLinkStyle}>Inventario</NavLink>
 
             {/* Solo mostrar la pestaña de Usuarios si es ADMIN */}
@@ -184,7 +187,7 @@ function App() {
             <Layout />
           </PrivateRoute>
         }>
-          <Route index element={<Navigate to="/inventario" replace />} />
+          <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="inventario" element={<Inventory />} />
 
           {/* Proteger la ruta de usuarios con requireAdmin={true} */}
@@ -193,6 +196,8 @@ function App() {
               <Users />
             </PrivateRoute>
           } />
+
+          <Route path="dashboard" element={<Dashboard />} />
         </Route>
       </Routes>
     </BrowserRouter>
